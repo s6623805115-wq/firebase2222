@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Environment Monitoring Dashboard</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc; /* Slate 50 */
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        .glass-panel {
+            background: #1e293b;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            border-radius: 1rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-6 lg:p-8 flex flex-col gap-6">
+
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-700 pb-5">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
+                <i class="fa-solid fa-leaf text-emerald-500"></i>
+                Environment Monitor
+            </h1>
+            <p class="text-slate-400 text-sm mt-1">Real-time Temp, Humi, and Light tracking</p>
+        </div>
+        
+        <!-- Timestamp Display -->
+        <div class="glass-panel px-5 py-2.5 flex items-center gap-3">
+            <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+            <div class="flex flex-col">
+                <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Latest Timestamp</span>
+                <span class="text-lg font-mono text-white font-medium" id="latest-timestamp">--:--:--</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Temp Card -->
+        <div class="glass-panel p-6 relative overflow-hidden flex flex-col group">
+            <div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <i class="fa-solid fa-temperature-three-quarters text-8xl text-rose-500"></i>
+            </div>
+            <div class="flex items-center gap-3 mb-2 z-10">
+                <div class="w-10 h-10 rounded-lg bg-rose-500/20 flex items-center justify-center text-rose-500">
+                    <i class="fa-solid fa-temperature-half text-xl"></i>
+                </div>
+                <h3 class="text-slate-300 font-semibold">Temperature</h3>
+            </div>
+            <div class="mt-4 z-10 flex items-baseline gap-2">
+                <h2 class="text-5xl font-bold text-white" id="val-temp">--</h2>
+                <span class="text-xl text-slate-400">°C</span>
+            </div>
+        </div>
+
+        <!-- Humidity Card -->
+        <div class="glass-panel p-6 relative overflow-hidden flex flex-col group">
+            <div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <i class="fa-solid fa-droplet text-8xl text-blue-500"></i>
+            </div>
+            <div class="flex items-center gap-3 mb-2 z-10">
+                <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-500">
+                    <i class="fa-solid fa-water text-xl"></i>
+                </div>
+                <h3 class="text-slate-300 font-semibold">Humidity</h3>
+            </div>
+            <div class="mt-4 z-10 flex items-baseline gap-2">
+                <h2 class="text-5xl font-bold text-white" id="val-humi">--</h2>
+                <span class="text-xl text-slate-400">%</span>
+            </div>
+        </div>
+
+        <!-- Light Card -->
+        <div class="glass-panel p-6 relative overflow-hidden flex flex-col group">
+            <div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <i class="fa-solid fa-sun text-8xl text-amber-400"></i>
+            </div>
+            <div class="flex items-center gap-3 mb-2 z-10">
+                <div class="w-10 h-10 rounded-lg bg-amber-400/20 flex items-center justify-center text-amber-400">
+                    <i class="fa-solid fa-lightbulb text-xl"></i>
+                </div>
+                <h3 class="text-slate-300 font-semibold">Light Level</h3>
+            </div>
+            <div class="mt-4 z-10 flex items-baseline gap-2">
+                <h2 class="text-5xl font-bold text-white" id="val-light">--</h2>
+                <span class="text-xl text-slate-400">Lux</span>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow mt-2">
+        
+        <!-- Temp Chart -->
+        <div class="glass-panel p-5 flex flex-col h-[300px]">
+            <h3 class="text-sm font-semibold text-slate-300 mb-4">Temperature History</h3>
+            <div class="relative flex-grow">
+                <canvas id="chart-temp"></canvas>
+            </div>
+        </div>
+
+        <!-- Humidity Chart -->
+        <div class="glass-panel p-5 flex flex-col h-[300px]">
+            <h3 class="text-sm font-semibold text-slate-300 mb-4">Humidity History</h3>
+            <div class="relative flex-grow">
+                <canvas id="chart-humi"></canvas>
+            </div>
+        </div>
+
+        <!-- Light Chart -->
+        <div class="glass-panel p-5 flex flex-col h-[300px]">
+            <h3 class="text-sm font-semibold text-slate-300 mb-4">Light Level History</h3>
+            <div class="relative flex-grow">
+                <canvas id="chart-light"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Set global Chart.js settings for dark theme
+        Chart.defaults.color = '#94a3b8'; // text-slate-400
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.borderColor = 'rgba(51, 65, 85, 0.6)'; // border-slate-700
+        Chart.defaults.plugins.legend.display = false; // Hide legends for cleaner look
+
+        // Data arrays config
+        const maxDataPoints = 20; // Show last 20 readings
+        let timeLabels = [];
+        let tempDataArray = [];
+        let humiDataArray = [];
+        let lightDataArray = [];
+
+        // Initial Values (Starting point for simulation)
+        let currentTemp = 25.5; // Celsius
+        let currentHumi = 45.0; // Percentage
+        let currentLight = 450; // Lux
+
+        // Generate initial empty data to fill charts
+        let now = new Date();
+        for (let i = maxDataPoints; i > 0; i--) {
+            let pastTime = new Date(now.getTime() - i * 1500); // 1.5s steps
+            timeLabels.push(pastTime.toLocaleTimeString('en-US', { hour12: false }));
+            tempDataArray.push(currentTemp);
+            humiDataArray.push(currentHumi);
+            lightDataArray.push(currentLight);
+        }
+
+        // Common chart options
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 400, easing: 'linear' },
+            scales: {
+                x: { grid: { display: false }, ticks: { maxTicksLimit: 5 } },
+                y: { beginAtZero: false }
+            },
+            plugins: {
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleColor: '#fff',
+                    bodyColor: '#cbd5e1',
+                    padding: 10,
+                    displayColors: false
+                }
+            }
+        };
+
+        // 1. Temp Chart
+        const ctxTemp = document.getElementById('chart-temp').getContext('2d');
+        const tempChart = new Chart(ctxTemp, {
+            type: 'line',
+            data: {
+                labels: timeLabels,
+                datasets: [{
+                    label: 'Temp (°C)',
+                    data: tempDataArray,
+                    borderColor: '#f43f5e', // rose-500
+                    backgroundColor: 'rgba(244, 63, 94, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                }]
+            },
+            options: { ...commonOptions, scales: { ...commonOptions.scales, y: { min: 10, max: 40 } } }
+        });
+
+        // 2. Humidity Chart
+        const ctxHumi = document.getElementById('chart-humi').getContext('2d');
+        const humiChart = new Chart(ctxHumi, {
+            type: 'line',
+            data: {
+                labels: timeLabels,
+                datasets: [{
+                    label: 'Humidity (%)',
+                    data: humiDataArray,
+                    borderColor: '#3b82f6', // blue-500
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                }]
+            },
+            options: { ...commonOptions, scales: { ...commonOptions.scales, y: { min: 20, max: 90 } } }
+        });
+
+        // 3. Light Chart
+        const ctxLight = document.getElementById('chart-light').getContext('2d');
+        const lightChart = new Chart(ctxLight, {
+            type: 'line',
+            data: {
+                labels: timeLabels,
+                datasets: [{
+                    label: 'Light (Lux)',
+                    data: lightDataArray,
+                    borderColor: '#fbbf24', // amber-400
+                    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                }]
+            },
+            options: { ...commonOptions, scales: { ...commonOptions.scales, y: { min: 100, max: 1000 } } }
+        });
+
+        function generateNewData() {
+            // Random walk simulation
+            let tempChange = (Math.random() * 1.0) - 0.5;
+            let humiChange = (Math.random() * 2.0) - 1.0;
+            let lightChange = (Math.random() * 40) - 20;
+
+            // Apply changes and clamp values
+            currentTemp = Math.max(15, Math.min(35, currentTemp + tempChange));
+            currentHumi = Math.max(30, Math.min(85, currentHumi + humiChange));
+            currentLight = Math.max(200, Math.min(900, currentLight + lightChange));
+
+            // Generate Timestamp
+            const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+
+            // 1. Update UI Text
+            document.getElementById('latest-timestamp').innerText = timestamp;
+            document.getElementById('val-temp').innerText = currentTemp.toFixed(1);
+            document.getElementById('val-humi').innerText = currentHumi.toFixed(1);
+            document.getElementById('val-light').innerText = Math.round(currentLight);
+
+            // 2. Update Data Arrays (Shift old, push new)
+            timeLabels.shift();
+            timeLabels.push(timestamp);
+
+            tempDataArray.shift();
+            tempDataArray.push(currentTemp);
+
+            humiDataArray.shift();
+            humiDataArray.push(currentHumi);
+
+            lightDataArray.shift();
+            lightDataArray.push(currentLight);
+
+            // 3. Update Charts
+            tempChart.update('none'); // 'none' disables full animation for smoother stream
+            humiChart.update('none');
+            lightChart.update('none');
+        }
+
+        // Initialize first render immediately
+        generateNewData();
+
+        // Run updates every 1.5 seconds (Simulating real-time incoming data)
+        setInterval(generateNewData, 1500);
+
+    </script>
+</body>
+</html>
